@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    input {
+      padding: 15px;
+      width: 300px;
+      box-sizing: border-box;
+    }
+    .result {
+      padding: 32px 0;
+    }
+    .result__item {
+      padding: 12px 0;
+    }
+    .result__item-title {
+      font-size: 18px;
+    }
+    .result__item-description {
+      font-size: 14px; 
+    }
+    .result__item-type {
+      padding: 4px 0;
+      font-size: 12px;
+      color: rgba(0,0,0,0.6);
+    }
+    a[href=""] {
+      color: #000;
+      cursor: default;
+      text-decoration: none;
+    }
+    .result__item-description {
+      width: 500px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <div class="app"></div>
+  
+<script>
+  const service_url = 'https://kgsearch.googleapis.com/v1/entities:search';
+  const key = 'AIzaSyBLuP2kP38nzt_OcO5Qv1ivcDm1WdhCAlM';
+
+  const $input = document.createElement('input');
+  const $app = document.querySelector('.app');
+  const $result = document.createElement('div');
+
+  $result.classList.add('result');
+
+  $app.append($input);
+  $app.append($result);
+
+  $input.addEventListener('change', function(e){
+    const value = this.value;
+    request(value, function(content){
+      createResult(content, value);
+    });
+  })
+
+  function request(str, callback){
+
+  const params = {
+    'query': str,
+    'limit': 20,
+    'indent': true,
+    'key' : 'AIzaSyBLuP2kP38nzt_OcO5Qv1ivcDm1WdhCAlM',
+  };
+
+  const paramsString = Object.keys(params).map(function(i){
+      return `${i}=${encodeURIComponent(params[i])}`
+  }).join('&');
+
+  fetch(`${service_url}?${paramsString}`)
+  .then(function(responce){
+    return responce.json();
+  }).then(function(context){
+    if (callback) callback(context);
+  });
+
+  }
+
+  function createResult(content, value) {
+    let result = '';
+    value = value.toLowerCase();
+
+    console.log(content)
+
+    content.itemListElement.forEach(element => {
+
+      let match = false;
+
+      if (element.result.name.toLowerCase().includes(value)) {
+        match = true;
+      }
+
+      if (element.result.description && element.result.description.toLowerCase().includes(value)) {
+        match = true;
+      }
+
+      if (element.result.detailedDescription && element.result.detailedDescription.articleBody.toLowerCase().includes(value)) {
+        match = true;
+      }
+
+      if (match) result += `
+        <div class="result__item">
+           <div class="result__item-title">
+            <a target="_blank" href="${(element.result.detailedDescription && element.result.detailedDescription.url) ? element.result.detailedDescription.url: ''}">
+              ${element.result.name}
+            </a>
+            </div>
+           <div class="result__item-type">[${element.result['@type'].join(', ')}]</div>
+           ${(element.result.description)?`<div class="result__item-description">${element.result.description}</div>`:''}
+           ${(element.result.detailedDescription && element.result.detailedDescription.articleBody) ? `<div class="result__item-description">${element.result.detailedDescription.articleBody}</div>`:''}
+        </div>  
+      `
+    });
+
+    $result.innerHTML = result;
+
+  }
+
+  
+</script>
+</body>
+</html>
